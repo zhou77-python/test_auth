@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:test_auth/screens/signup_screen.dart';
 import 'package:test_auth/widgets/custom_scaffold.dart';
 import '../themes/theme.dart';
+import '../services/auth_service.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -17,40 +17,7 @@ class _SigninScreenState extends State<SigninScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool rememberPassword = true;
-  bool isLoading = false;
-
-  Future<void> _signin() async {
-    if (_formSignInKey.currentState!.validate()) {
-      setState(() {
-        isLoading = true;
-      });
-      try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-        // Naviguez vers la page d'accueil après une connexion réussie
-        Navigator.pushReplacementNamed(context, '/home');
-      } on FirebaseAuthException catch (e) {
-        String errorMessage;
-        if (e.code == 'user-not-found') {
-          errorMessage = "Aucun utilisateur trouvé pour cet e-mail.";
-        } else if (e.code == 'wrong-password') {
-          errorMessage = "Mot de passe incorrect.";
-        } else {
-          errorMessage = e.message ?? "Erreur inconnue.";
-        }
-        // Affichez un message d'erreur
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      } finally {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
+  final AuthService _authService = AuthService(); // Instance du service d'authentification
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +54,7 @@ class _SigninScreenState extends State<SigninScreen> {
                         ),
                       ),
                       const SizedBox(height: 40.0),
+                      // Email Field
                       TextFormField(
                         controller: _emailController,
                         validator: (value) {
@@ -100,11 +68,17 @@ class _SigninScreenState extends State<SigninScreen> {
                           hintText: 'Entrer Email',
                           hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.black12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.black12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
                       const SizedBox(height: 25.0),
+                      // Password Field
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
@@ -120,21 +94,105 @@ class _SigninScreenState extends State<SigninScreen> {
                           hintText: 'Entrer mot de passe',
                           hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.black12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.black12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
                       const SizedBox(height: 25.0),
-                      isLoading
-                          ? const CircularProgressIndicator()
-                          : SizedBox(
+                      // Remember Me + Forgot Password
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: rememberPassword,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    rememberPassword = value!;
+                                  });
+                                },
+                                activeColor: lightColorScheme.primary,
+                              ),
+                              const Text(
+                                'Se souvenir de moi',
+                                style: TextStyle(color: Colors.black45),
+                              ),
+                            ],
+                          ),
+                          GestureDetector(
+                            child: Text(
+                              'Mot de passe oublier',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: lightColorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 25.0),
+                      // Login Button
+                      SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _signin,
+                          onPressed: () async {
+                            if (_formSignInKey.currentState!.validate()) {
+                              // Appel du service AuthService pour se connecter
+                              await _authService.signin(
+                                email: _emailController.text,
+                                password: _passwordController.text,
+                                context: context,
+                              );
+                            }
+                          },
                           child: const Text('Connexion'),
                         ),
                       ),
                       const SizedBox(height: 25.0),
+                      // Divider with Social Login Options
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              thickness: 0.7,
+                              color: Colors.grey.withOpacity(0.5),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              'Connexion avec ',
+                              style: TextStyle(color: Colors.black45),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              thickness: 0.7,
+                              color: Colors.grey.withOpacity(0.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 25.0),
+                      // Social Login Icons
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Icon(FontAwesomeIcons.facebookF, color: Colors.blue),
+                          Icon(FontAwesomeIcons.twitter, color: Colors.blueAccent),
+                          Icon(FontAwesomeIcons.google, color: Colors.red),
+                          Icon(FontAwesomeIcons.apple, color: Colors.black),
+                        ],
+                      ),
+                      const SizedBox(height: 25.0),
+                      // No Account? Sign Up
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -161,6 +219,7 @@ class _SigninScreenState extends State<SigninScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 20.0),
                     ],
                   ),
                 ),

@@ -47,7 +47,7 @@ class AuthService {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const SigninScreen()),
+        MaterialPageRoute(builder: (_) => const HomePage()),
       );
     } on FirebaseAuthException catch (e) {
       String message;
